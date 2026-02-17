@@ -101,7 +101,7 @@ Vue.component('product', {
     }
 })
 
-Vue.component ('product-tabs', {
+Vue.component('product-tabs', {
     props: {
         reviews: {
             type: Array,
@@ -120,7 +120,7 @@ Vue.component ('product-tabs', {
             required: true
         },
         brand: {
-            type:String,
+            type: String,
             required: true
         },
         variants: {
@@ -138,15 +138,15 @@ Vue.component ('product-tabs', {
         </span>
       </ul>
       <div v-show="selectedTab=== 'Reviews'">
-        <p v-if="!reviews.length">There are no reviews yet.</p>
+        <p v-if="allReviews.length === 0">There are no reviews yet.</p>
         <ul>
-          <li v-for="review in reviews">
-            <p>{{ review.name }}</p>
-            <p>Rating: {{ review.rating }}</p>
-            <p>{{ review.review }}</p>
-          </li>
+            <li v-for="(review, index) in allReviews" :key="index">
+                <p><strong>{{ review.name }}</strong></p>
+                <p>Rating: {{ review.rating }} stars</p>
+                <p>{{ review.review }}</p>
+        </li>
         </ul>
-      </div>
+        </div>
       
       <div v-show="selectedTab === 'Make a Review'">
         <product-review></product-review>
@@ -187,8 +187,27 @@ Vue.component ('product-tabs', {
 `,
     data() {
         return {
-            tabs: ['Reviews', 'Make a Review', 'Shipping','Details'],
-            selectedTab: 'Reviews'
+            tabs: ['Reviews', 'Make a Review', 'Shipping', 'Details'],
+            selectedTab: 'Reviews',
+            savedReviews: []
+        }
+    },
+    mounted() {
+        this.loadReviewsFromStorage();
+    },
+    methods: {
+        loadReviewsFromStorage() {
+            try {
+                const stored = localStorage.getItem('productReviews');
+                if (stored) {
+                    this.savedReviews = JSON.parse(stored);
+                } else {
+                    this.savedReviews = [];
+                }
+            } catch (e) {
+                console.error('Ошибка чтения из localStorage:', e);
+                this.savedReviews = [];
+            }
         }
     },
     computed: {
@@ -200,6 +219,9 @@ Vue.component ('product-tabs', {
         },
         nextDayShippingCost() {
             return this.premium ? "$9.99" : "$14.99";
+        },
+        allReviews() {
+            return [...this.reviews, ...this.savedReviews];
         }
     }
 })
@@ -242,7 +264,6 @@ Vue.component('product-review', {
 </form>
  `,
     data() {
-
         return {
             name: null,
             review: null,
@@ -250,22 +271,40 @@ Vue.component('product-review', {
             errors: []
         }
     },
-    methods:{
+    methods: {
         onSubmit() {
-            if(this.name && this.review && this.rating) {
+            if (this.name && this.review && this.rating) {
                 let productReview = {
                     name: this.name,
                     review: this.review,
                     rating: this.rating
                 }
+
+                let reviews;
+                try {
+                    const stored = localStorage.getItem('productReviews');
+                    reviews = stored ? JSON.parse(stored) : [];
+                } catch (e) {
+                    console.error('Ошибка чтения из localStorage:', e);
+                    reviews = [];
+                }
+
+                reviews.push(productReview);
+
+                try {
+                    localStorage.setItem('productReviews', JSON.stringify(reviews));
+                } catch (e) {
+                    console.error('Ошибка сохранения в localStorage:', e);
+                }
+
                 eventBus.$emit('review-submitted', productReview)
                 this.name = null
                 this.review = null
                 this.rating = null
             } else {
-                if(!this.name) this.errors.push("Name required.")
-                if(!this.review) this.errors.push("Review required.")
-                if(!this.rating) this.errors.push("Rating required.")
+                if (!this.name) this.errors.push("Name required.")
+                if (!this.review) this.errors.push("Review required.")
+                if (!this.rating) this.errors.push("Rating required.")
             }
         }
     }
