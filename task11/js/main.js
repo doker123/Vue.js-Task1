@@ -35,7 +35,12 @@ Vue.component('product', {
             Add to cart
           </button>
         </div>
-        <product-tabs :reviews="reviews"></product-tabs>
+        <product-tabs :reviews="reviews"
+        :premium="premium"
+        :details="details"
+        :product="product"
+        :brand="brand"
+        :variants="variants"></product-tabs>
       </div>
     `,
     data() {
@@ -97,6 +102,32 @@ Vue.component('product', {
 })
 
 Vue.component ('product-tabs', {
+    props: {
+        reviews: {
+            type: Array,
+            required: false
+        },
+        premium: {
+            type: Boolean,
+            required: true
+        },
+        details: {
+            type: Array,
+            required: true
+        },
+        product: {
+            type: String,
+            required: true
+        },
+        brand: {
+            type:String,
+            required: true
+        },
+        variants: {
+            type: Array,
+            required: true
+        }
+    },
     template: `
     <div>
       <ul>
@@ -116,21 +147,59 @@ Vue.component ('product-tabs', {
           </li>
         </ul>
       </div>
+      
       <div v-show="selectedTab === 'Make a Review'">
         <product-review></product-review>
       </div>
+      
+      <div v-show="selectedTab === 'Shipping'" class="tab-content">
+            <h3>Shipping Information</h3>
+            <div class="shipping-info">
+                <p><strong>Delivery Options:</strong></p>
+                <ul>
+                    <li>Standard Shipping (3-5 business days) - {{ shippingCost }}</li>
+                    <li>Express Shipping (1-2 business days) - {{ expressShippingCost }}</li>
+                    <li>Next Day Delivery - {{ nextDayShippingCost }}</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div v-show="selectedTab === 'Details'" class="tab-content">
+            <h3>Product Details</h3>
+            <div class="product-details">
+                <p><strong>Product:</strong> {{ product }}</p>
+                <p><strong>Brand:</strong> {{ brand }}</p>
+                <p><strong>Available Colors:</strong></p>
+                <div class="color-swatches">
+                    <div v-for="variant in variants" 
+                         class="color-swatch"
+                         :style="{ backgroundColor: variant.variantColor }"
+                         :title="variant.variantColor">
+                    </div>
+                </div>
+                <p><strong>Materials:</strong></p>
+                <ul>
+                    <li v-for="detail in details">{{ detail }}</li>
+                </ul>
+            </div>
+        </div>
     </div>
 `,
-    props: {
-        reviews: {
-            type: Array,
-            required: false
-        },
-    },
     data() {
         return {
-            tabs: ['Reviews', 'Make a Review'],
+            tabs: ['Reviews', 'Make a Review', 'Shipping','Details'],
             selectedTab: 'Reviews'
+        }
+    },
+    computed: {
+        shippingCost() {
+            return this.premium ? "Free" : "2,99";
+        },
+        expressShippingCost() {
+            return this.premium ? "$4.99" : "$7.99";
+        },
+        nextDayShippingCost() {
+            return this.premium ? "$9.99" : "$14.99";
         }
     }
 })
